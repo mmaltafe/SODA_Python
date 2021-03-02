@@ -1,5 +1,5 @@
 # SODA_Python
-This repository consists in a python version of SODA algorithm. With the addition of some distance metrics.
+This repository consists in a python version of SODA algorithm [1]. With the addition of some distance metrics.
 
 ##  Distance Metrics ##
 ### Offline Mode
@@ -54,4 +54,4 @@ Python Version of SODA
       - Script version of SODA Algorithm with Numba applied in order to reduce execution time
 
 # References
-X. Gu, P. Angelov, D. Kangin, J. Principe, Self-organised direction aware data partitioning algorithm, Information Sciences, vol.423, pp. 80-95 , 2018.
+[1] - X. Gu, P. Angelov, D. Kangin, J. Principe, Self-organised direction aware data partitioning algorithm, Information Sciences, vol.423, pp. 80-95 , 2018.
