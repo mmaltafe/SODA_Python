@@ -75,7 +75,7 @@ def Globaldensity_Calculator(data, distancetype):
     uspi2 = pi_calculator(Uniquesample, 'cosine')
 
     sum_uspi2 = sum(uspi2)
-    Density_2 = uspi1 / sum_uspi2
+    Density_2 = uspi2 / sum_uspi2
     GD = (Density_2+Density_1) * Frequency
     index = GD.argsort()[::-1]
     GD = GD[index]
