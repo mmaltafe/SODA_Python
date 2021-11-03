@@ -29,34 +29,64 @@ def grid_set(data, N):
     grid_angl = np.sqrt(1-np.sum(AvD2*AvD2))/N
     return X1, AvD1, AvD2, grid_trad, grid_angl
 
+@njit(fastmath = True)
 def pi_calculator(Uniquesample, mode):
+    
     '''
     # Cumulative Proximity in recursive version
     # Section 2.2.i of SODA
     '''
-    UN, W = Uniquesample.shape
+    
     if mode == 'euclidean':
-        AA1 = Uniquesample.mean(0)
-        X1 = sum(sum(np.power(Uniquesample,2)))/UN
-        DT1 = X1 - sum(np.power(AA1,2))
-        aux = []
-        for i in range(UN): aux.append(AA1)
-        aux2 = [Uniquesample[i]-aux[i] for i in range(UN)]
-        uspi = np.sum(np.power(aux2,2),axis=1)+DT1
+
+        L, W = Uniquesample.shape
+        distance = np.zeros((L))
+
+        uspi = []
+
+        for i in range(L):
+
+            for j in range(L):
+
+                norm = 0
+
+                for k in range(W): norm += (Uniquesample[i,k]-Uniquesample[j,k])**2
+
+                euclidean_distance = (norm)**0.5
+
+                distance[j] = euclidean_distance
+
+            uspi.append(np.sum(distance**2,axis=0))
+
 
     if mode == 'cosine':
-        Xnorm = np.matrix(np.sqrt(np.sum(np.power(Uniquesample,2),axis=1))).T
-        aux2 = Xnorm
-        for i in range(W-1):
-            aux2 = np.insert(aux2,0,Xnorm.T,axis=1)
-        Uniquesample1 = Uniquesample / aux2
-        AA2 = np.mean(Uniquesample1,0)
-        X2 = 1
-        DT2 = X2 - np.sum(np.power(AA2,2))
-        aux = []
-        for i in range(UN): aux.append(AA2)
-        aux2 = [Uniquesample1[i]-aux[i] for i in range(UN)]
-        uspi = np.sum(np.sum(np.power(aux2,2),axis=1),axis=1)+DT2
+
+        L, W = Uniquesample.shape
+        distance = np.zeros((L))
+
+        uspi = []
+
+        for i in range(L):
+
+            for j in range(L):
+
+                dot = 0
+                denom_a = 0
+                denom_b = 0
+
+                for k in range(W):
+
+                    dot += (Uniquesample[i,k]*Uniquesample[j,k])
+                    denom_a += Uniquesample[i,k]**2
+                    denom_b += Uniquesample[j,k]**2
+
+                cos_similarity = dot / ((denom_a ** 0.5) * (denom_b ** 0.5))
+
+                distance[j] = 1 - cos_similarity
+
+            uspi.append(np.sum(distance**2,axis=0))
+        
+    return uspi
         
     return uspi
 
@@ -71,12 +101,12 @@ def Globaldensity_Calculator(Uniquesample, distancetype):
     '''
     uspi1 = pi_calculator(Uniquesample, distancetype)
     
-    sum_uspi1 = sum(uspi1)
+    sum_uspi1 = np.sum(uspi1)
     Density_1 = uspi1 / sum_uspi1
 
     uspi2 = pi_calculator(Uniquesample, 'cosine')
 
-    sum_uspi2 = sum(uspi2)
+    sum_uspi2 = np.sum(uspi2)
     Density_2 = uspi2 / sum_uspi2
 
     GD = (Density_2+Density_1)
@@ -106,9 +136,12 @@ def hand_dist(XA,XB):
             denom_a += (XA[0,j] * XA[0,j]) # Cosine
             denom_b += (XB[i,j] * XB[i,j]) # Cosine
 
-        distance[i,0] = aux**.5
-        distance[i,1] = ((1 - ((dot / ((denom_a ** 0.5) * (denom_b ** 0.5)))))**2)**.25
-    
+        distance[i,0] = aux**0.5
+
+        cos_similarity = dot / ((denom_a ** 0.5) * (denom_b ** 0.5))
+
+        distance[i,1] = ((1 - cos_similarity)**2)**0.5
+
     return distance
         
 @njit
@@ -228,6 +261,7 @@ def cloud_member_recruitment_njit(ModelNumber,Center_samples,Uniquesample,grid_t
     return B
 
 def SelfOrganisedDirectionAwareDataPartitioning(Input):
+
     data = Input['StaticData']
     L, W = data.shape
     N = Input['GridSize']
