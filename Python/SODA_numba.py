@@ -3,6 +3,67 @@ from numba import njit
 
 # SODA Functions
 
+class ProgBar:
+
+    def __init__(self, n_elements,int_str):
+        
+        import sys
+
+        self.n_elements = n_elements
+        self.progress = 0
+
+        print(int_str)
+
+        # initiallizing progress bar
+
+        info = '{:.2f}% - {:d} of {:d}'.format(0,0,n_elements)
+
+        formated_bar = ' '*int(50)
+
+        sys.stdout.write("\r")
+
+        sys.stdout.write('[%s] %s' % (formated_bar,info))
+
+        sys.stdout.flush()
+
+    def update(self,prog_info=None):
+        
+        import sys
+
+        if prog_info == None:
+
+            self.progress += 1
+
+            percent = (self.progress)/self.n_elements * 100 / 2
+
+            info = '{:.2f}% - {:d} of {:d}'.format(percent*2,(i+1),self.n_elements)
+
+            formated_bar = '-'* int (percent) + ' '*int(50-percent)
+
+            sys.stdout.write("\r")
+
+            sys.stdout.write('[%s] %s' % (formated_bar,info))
+
+            sys.stdout.flush()
+
+
+        else:
+
+            self.progress += 1
+
+            percent = (self.progress)/self.n_elements * 100 / 2
+
+            info = '{:.2f}% - {:d} of {:d} '.format(percent*2,(i+1),self.n_elements) + prog_info
+
+            formated_bar = '-'* int (percent) + ' '*int(50-percent)
+
+            sys.stdout.write("\r")
+
+            sys.stdout.write('[%s] %s' % (formated_bar,info))
+
+            sys.stdout.flush()
+
+
 def grid_set(data, N):
     '''
     # Stage 1: Preparation
@@ -26,6 +87,7 @@ def grid_set(data, N):
     AvD2 = new_data.mean(0)
     grid_angl = np.sqrt(1-np.sum(AvD2*AvD2))/N
     return X1, AvD1, AvD2, grid_trad, grid_angl
+
 
 def pi_calculator(Uniquesample, mode):
     '''
@@ -58,6 +120,7 @@ def pi_calculator(Uniquesample, mode):
         
     return uspi
 
+
 def Globaldensity_Calculator(Uniquesample, distancetype):
     '''
     # Return:
@@ -70,12 +133,12 @@ def Globaldensity_Calculator(Uniquesample, distancetype):
     uspi1 = pi_calculator(Uniquesample, distancetype)
     
     sum_uspi1 = sum(uspi1)
-    Density_1 = uspi1 / sum_uspi1
+    Density_1 = sum_uspi1 / uspi1
 
     uspi2 = pi_calculator(Uniquesample, 'cosine')
 
     sum_uspi2 = sum(uspi2)
-    Density_2 = uspi2 / sum_uspi2
+    Density_2 = sum_uspi2 / uspi2
 
     GD = (Density_2+Density_1)
     index = GD.argsort()[::-1]
@@ -84,6 +147,7 @@ def Globaldensity_Calculator(Uniquesample, distancetype):
 
 
     return GD, Density_1, Density_2, Uniquesample
+
 
 @njit(fastmath = True)
 def hand_dist(XA,XB):   
@@ -104,11 +168,12 @@ def hand_dist(XA,XB):
             denom_a += (XA[0,j] * XA[0,j]) # Cosine
             denom_b += (XB[i,j] * XB[i,j]) # Cosine
 
-        distance[i,0] = aux**.5
-        distance[i,1] = ((1 - ((dot / ((denom_a ** 0.5) * (denom_b ** 0.5)))))**2)**.25
+        distance[i,0] = aux**0.5
+        distance[i,1] = 1 - (dot / ((denom_a ** 0.5) * (denom_b ** 0.5)))
     
     return distance
-        
+
+
 @njit
 def chessboard_division_njit(Uniquesample, MMtypicality, grid_trad, grid_angl, distancetype):
     '''
@@ -175,6 +240,7 @@ def chessboard_division_njit(Uniquesample, MMtypicality, grid_trad, grid_angl, d
     BOXMT_new = BOXMT[:contador]
     return BOX_new, BOX_miu_new, BOX_X_new, BOX_S_new, BOXMT_new, NB
 
+
 @njit(fastmath = True)
 def ChessBoard_PeakIdentification_njit(BOX_miu,BOXMT,NB,grid_trad,grid_angl, distancetype):
     '''
@@ -199,6 +265,7 @@ def ChessBoard_PeakIdentification_njit(BOX_miu,BOXMT,NB,grid_trad,grid_angl, dis
             Centers.append(BOX_miu[i])
             ModeNumber = ModeNumber + 1
     return Centers, ModeNumber
+
 
 @njit(fastmath = True)
 def cloud_member_recruitment_njit(ModelNumber,Center_samples,Uniquesample,grid_trad,grid_angl, distancetype):
@@ -225,21 +292,47 @@ def cloud_member_recruitment_njit(ModelNumber,Center_samples,Uniquesample,grid_t
         B[ii] = mini_idx
     return B
 
+
 def SelfOrganisedDirectionAwareDataPartitioning(Input):
+    
     data = Input['StaticData']
     L, W = data.shape
     N = Input['GridSize']
     distancetype = Input['DistanceType']
 
+    # Initializing progress bar
+
+    bar = ProgBar(5,'Partitioning data...')
+
     X1, AvD1, AvD2, grid_trad, grid_angl = grid_set(data,N)
+
+    # updating progress bar
+
+    bar.update('grid_set')
         
     GD, D1, D2, Uniquesample = Globaldensity_Calculator(data, distancetype)
 
+    # updating progress bar
+
+    bar.update('Globaldensity_Calculator')
+
     BOX,BOX_miu,BOX_X,BOX_S,BOXMT,NB = chessboard_division_njit(Uniquesample,GD,grid_trad,grid_angl, distancetype)
 
+    # updating progress bar
+
+    bar.update('chessboard_division_njit')
+
     Center,ModeNumber = ChessBoard_PeakIdentification_njit(BOX_miu,BOXMT,NB,grid_trad,grid_angl, distancetype)
+
+    # updating progress bar
+
+    bar.update('ChessBoard_PeakIdentification_njit')
      
     IDX = cloud_member_recruitment_njit(ModeNumber,np.array(Center),data,grid_trad,grid_angl, distancetype)
+
+    # updating progress bar
+
+    bar.update('cloud_member_recruitment_njit')
            
         
     Boxparameter = {'BOX': BOX,
@@ -256,4 +349,5 @@ def SelfOrganisedDirectionAwareDataPartitioning(Input):
               'IDX': list(IDX.astype(int)+1),
               'SystemParams': Boxparameter,
               'DistanceType': distancetype}
+
     return Output
