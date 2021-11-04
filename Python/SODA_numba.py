@@ -36,7 +36,7 @@ class ProgBar:
 
             percent = (self.progress)/self.n_elements * 100 / 2
 
-            info = '{:.2f}% - {:d} of {:d}'.format(percent*2,(i+1),self.n_elements)
+            info = '{:.2f}% - {:d} of {:d}'.format(percent*2,self.progress,self.n_elements)
 
             formated_bar = '-'* int (percent) + ' '*int(50-percent)
 
@@ -53,7 +53,7 @@ class ProgBar:
 
             percent = (self.progress)/self.n_elements * 100 / 2
 
-            info = '{:.2f}% - {:d} of {:d} '.format(percent*2,(i+1),self.n_elements) + prog_info
+            info = '{:.2f}% - {:d} of {:d} '.format(percent*2,self.progress,self.n_elements) + prog_info
 
             formated_bar = '-'* int (percent) + ' '*int(50-percent)
 
